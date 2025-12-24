@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>国风圣诞祝福 🎄</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at top, #2b3a4a, #000);
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        /* UI */
+        #ui {
+            position: absolute;
+            top: 18px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #name {
+            font-size: 36px;
+            color: #ffd6e8;
+            text-shadow: 0 0 14px rgba(255, 180, 220, .9);
+        }
+
+        #blessing {
+            margin-top: 12px;
+            font-size: 20px;
+            color: #e6f7ff;
+            min-height: 60px;
+            line-height: 1.6;
+            text-shadow: 0 0 12px rgba(120, 200, 255, .9);
+        }
+
+        /* 弹窗 */
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(.6);
+            opacity: 0;
+            padding: 26px 30px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, .15);
+            backdrop-filter: blur(12px);
+            color: #fff;
+            text-align: center;
+            z-index: 30;
+            transition: .35s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        .popup.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .popup h2 {
+            margin: 0 0 10px;
+            color: #ffd6e8;
+        }
+
+        .popup button {
+            margin-top: 12px;
+            padding: 6px 16px;
+            border: none;
+            border-radius: 12px;
+            background: #ffb6d5;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui">
+        <div id="name">🎄 四喜upup👑倒头👑早饭🎄</div>
+        <div id="blessing"></div>
+    </div>
+
+    <!-- 音乐 -->
+    <audio id="bgm" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="popup" id="popup">
+        <h2 id="popupTitle"></h2>
+        <p id="popupText"></p>
+        <button onclick="closePopup()">关闭</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+    <script>
+        /* 场景 */
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x000000, 25, 70);
+
+        const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, .1, 200);
+        camera.position.set(0, 10, 32);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(innerWidth, innerHeight);
+        renderer.setPixelRatio(devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        /* 灯光 */
+        scene.add(new THREE.AmbientLight(0xffffff, .9));
+        const mainLight = new THREE.DirectionalLight(0xfff2e5, 1.2);
+        mainLight.position.set(-10, 30, 20);
+        scene.add(mainLight);
+
+        /* ===== 圣诞树（不移动、不缩放） ===== */
+        const tree = new THREE.Group();
+
+        function leaf(radius, y) {
+            const pts = [];
+            for (let i = 0; i < 18; i++) {
+                pts.push(new THREE.Vector2(radius * (.8 + Math.random() * .4), i * .18));
+            }
+            const geo = new THREE.LatheGeometry(pts, 48);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x7fd8b5,
+                transparent: true,
+                opacity: .95,
+                emissive: 0xffc0d8,
+                emissiveIntensity: .15
+            });
+            const m = new THREE.Mesh(geo, mat);
+            m.position.y = y;
+            return m;
+        }
+        for (let i = 0; i < 9; i++) {
+            tree.add(leaf(8 - i * .8, i * 1.9));
+        }
+
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(1, 1.4, 4),
+            new THREE.MeshStandardMaterial({ color: 0x5b3a1a })
+        );
+        trunk.position.y = -3;
+        tree.add(trunk);
+
+        /* ⭐ 星星呼吸 */
+        const star = new THREE.Mesh(
+            new THREE.OctahedronGeometry(1.4),
+            new THREE.MeshStandardMaterial({
+                color: 0xfff2aa,
+                emissive: 0xffd966,
+                emissiveIntensity: 1
+            })
+        );
+        star.position.y = 20;
+        tree.add(star);
+
+        /* 彩灯（整组变色） */
+        const lights = [];
+        for (let i = 0; i < 90; i++) {
+            const bulb = new THREE.Mesh(
+                new THREE.SphereGeometry(.18, 12, 12),
+                new THREE.MeshStandardMaterial({ emissiveIntensity: 1 })
+            );
+            const a = i * .35;
+            bulb.position.set(
+                Math.cos(a) * (6 - i * .05),
+                i * .22,
+                Math.sin(a) * (6 - i * .05)
+            );
+            tree.add(bulb);
+            lights.push(bulb);
+        }
+        scene.add(tree);
+
+        const lightColors = [
+            new THREE.Color(0xff4d4d),
+            new THREE.Color(0xffe066),
+            new THREE.Color(0xffffff),
+            new THREE.Color(0xffb6d5),
+            new THREE.Color(0x9ad9ff),
+            new THREE.Color(0xc8a2ff)
+        ];
+
+        /* ===== 礼物（加 ribbon） ===== */
+        const gifts = [];
+        const giftTexts = [
+            "愿你被温柔以待 🎀",
+            "愿快乐如雪降临 ❄",
+            "愿梦想慢慢绽放 ✨",
+            "愿生活处处有光 🌸",
+            "愿新一年闪闪发光 🎁"
+        ];
+
+        for (let i = 0; i < 5; i++) {
+            const box = new THREE.Group();
+
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 2, 2),
+                new THREE.MeshStandardMaterial({ color: lightColors[i] })
+            );
+            box.add(base);
+
+            // 🎀 ribbon（十字）
+            const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            box.add(new THREE.Mesh(new THREE.BoxGeometry(.3, 2.1, 2.1), ribbonMat));
+            box.add(new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.1, .3), ribbonMat));
+
+            // 🎀 蝴蝶结
+            const bow = new THREE.Mesh(
+                new THREE.TorusGeometry(.35, .12, 12, 24),
+                new THREE.MeshStandardMaterial({ color: 0xffe0f0 })
+            );
+            bow.position.y = 1.2;
+            bow.rotation.x = Math.PI / 2;
+            box.add(bow);
+
+            box.position.set((i - 2) * 3, -6, 4);
+            box.userData.text = giftTexts[i];
+
+            scene.add(box);
+            gifts.push(box);
+        }
+
+        /* 下雪 */
+        const snowGeo = new THREE.BufferGeometry();
+        const snow = [];
+        for (let i = 0; i < 1400; i++) {
+            snow.push((Math.random() - .5) * 90, Math.random() * 60, (Math.random() - .5) * 90);
+        }
+        snowGeo.setAttribute("position", new THREE.Float32BufferAttribute(snow, 3));
+        const snowObj = new THREE.Points(
+            snowGeo,
+            new THREE.PointsMaterial({ color: 0xffffff, size: .4, opacity: .8, transparent: true })
+        );
+        scene.add(snowObj);
+
+        /* ✍️ 祝福文字（只保留你指定的两行） */
+        const text =
+            "愿这个圣诞，灯火温柔，\n" +
+            "雪落人间，万物安然。🎄✨\n";
+
+        let ti = 0;
+        const boxText = document.getElementById("blessing");
+        (function type() {
+            if (ti < text.length) {
+                boxText.innerHTML += text[ti] == "\n" ? "<br>" : text[ti];
+                ti++;
+                setTimeout(type, 90);
+            }
+        })();
+
+        /* 点击 */
+        const ray = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        window.addEventListener("click", e => {
+            document.getElementById("bgm").play();
+
+            mouse.x = e.clientX / innerWidth * 2 - 1;
+            mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+            ray.setFromCamera(mouse, camera);
+
+            const hit = ray.intersectObjects(gifts, true);
+            if (hit.length) {
+                popupTitle.innerText = "🎁 圣诞祝福";
+                popupText.innerText = hit[0].object.parent.userData.text;
+                popup.classList.add("show");
+            }
+        });
+        function closePopup() { popup.classList.remove("show"); }
+
+        /* 动画 */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            tree.rotation.y += .002;
+
+            const glow = (Math.sin(Date.now() * 0.003) + 1) / 2;
+            star.material.emissiveIntensity = 1 + .8 * glow;
+            star.scale.setScalar(1 + .05 * glow);
+
+            const idx = Math.floor(Date.now() * 0.002) % lightColors.length;
+            lights.forEach(l => {
+                l.material.color.copy(lightColors[idx]);
+                l.material.emissive.copy(lightColors[idx]);
+            });
+
+            const p = snowGeo.attributes.position.array;
+            for (let i = 1; i < p.length; i += 3) {
+                p[i] -= .05;
+                if (p[i] < 0) p[i] = 60;
+            }
+            snowGeo.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener("resize", () => {
+            camera.aspect = innerWidth / innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight);
+        });
+    </script>
+</body>
+
+</html>
